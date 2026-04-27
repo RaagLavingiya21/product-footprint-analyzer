@@ -1,0 +1,8 @@
+component,material,quantity,spend_usd,weight_kg,supplier,country_of_origin
+body,,1,10,0.15,ABCD,India
+thread,nylon,1,,0.001,ABCD,India
+label,nylon,1,1,0.001,ABCD,India
+dye,reactive dye,1,1,0.009,ABCD,India
+Packaging,Plastic,1,1,0.008,ABCD,China
+Packaging,LDPE,1,1,0.008,ABCD,China
+Packaging,LDPE,1,1,0.008,ABCD,India

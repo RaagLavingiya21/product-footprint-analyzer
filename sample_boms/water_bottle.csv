@@ -1,0 +1,8 @@
+component,material,quantity,spend_usd,weight_kg,supplier,country_of_origin
+body,stainless steel,1,10,0.3,ABCD,India
+Lid,SS304,1,3,0.07,abc,India
+Gasket/Seal,Silicone,1,1,0.0008,cvb,India
+Insulation,aerogel,1,2,0.0001,dfgh,India
+Antimicrobial treatment,tritan copolyester,1,2,0.0001,bnm,India
+packaging,cardboard,1,1,0.050,ert,China
+packaging,coating,1,1,0.005,ert,China

@@ -1,0 +1,113 @@
+# Product Carbon Footprint Analyzer — v1 Spec
+
+## What this tool does
+
+The tool estimates product carbon footprint(PCF) using product's bill of material data which can be messy. The input is the Bill of Materials, and the output is the total carbon footprint of the product as well breakdown of emission for the product at component level. The tool either flags or fixes the incomplete or anomalous data in the bill of material, matches the emission factor or flags the mismatch and calculates emission based on the BOM and emission factor data.
+
+## Input Schema
+
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| component | string | yes | the name of the component |
+| material | string | yes | the material used in the component |
+| quantity | float | yes | quantity of components |
+| spend_usd | float | yes | weight of the material in kilogram(kg)|
+| weight_kg | float | no | weight of the material in kilogram(kg)|
+| supplier | string | no | supplier of the component |
+| country_of_origin | string | no | Country of origin of the material |
+
+File must be CSV format, UTF-8 encoded, 
+maximum 500 rows and 5MB.
+
+
+## Output Schema
+
+### Summary
+| Field | Type | Description |
+|-------|------|-------------|
+| product_name | string | Name of the product |
+| total_kg_co2e | float | Total footprint |
+| matched_items | int | BOM rows successfully matched |
+| flagged_items | int | BOM rows flagged for review |
+
+
+### Line Item Breakdown
+| Field | Type | Description |
+|-------|------|-------------|
+| component | string | From input BOM |
+| material | string | From input BOM |
+| weight_kg | float | Normalized weight |
+| emission_factor | float | Matched EF value |
+| ef_unit | string | Unit of the EF |
+| ef_source | string | Database source |
+| kg_co2e | float | Calculated footprint |
+| share_pct | float | % of total footprint |
+
+on-screen table and downloadable CSV
+
+## BOM Examples
+
+### Example 1: Cotton T-shirt (clean)
+| component | material | quantity | spend_usd | weight_kg | supplier | country_of_origin |
+| --------- | -------- | -------- | ---- | --------- | -------- | ----------------- |
+| body | cotton fabric | 1 | 10 | 0.15 | ABCD | India |
+| thread | nylon | 1 | 1 | 0.005 | ABCD | India |
+| label | nylon | 1 | 1 | 0.001 | ABCD | India |
+| dye | reactive dye | 1 | 1 | 0.009 | ABCD | India |
+| Packaging | LDPE | 1 | 1 | 0.008 | ABCD | China |
+
+Expected behavior: 
+- No flags
+### Example 2: Cotton T-shirt (messy)
+
+| component | material | quantity | spend_usd | weight_kg | supplier | country_of_origin |
+| --------- | -------- | -------- | ---- | --------- | -------- | ----------------- |
+| body | | 1 | 10 | 0.15 | ABCD | India |
+| thread | nylon | 1 |  | 0.001| ABCD | India |
+| label | nylon | 1 | 1 | 0.001 | ABCD | India |
+| dye | reactive dye | 1 | 1 | 0.009 | ABCD | India |
+| Packaging | Plastic | 1 | 1 | 0.008 | ABCD | China |
+| Packaging | LDPE | 1 | 1 | 0.008 | ABCD | China |
+| Packaging | LDPE | 1 | 1 | 0.008 | ABCD | India |
+
+Expected behavior: 
+- row 1 missing material: flag for human review
+- row 2 missing spend_usd: flag for human review
+- row 5 ambiguous "Plastic": provide nearest match and flag it for human review
+- Row 5, 6 and 7: Tool recognize packaging with similar weight, supplier and country as duplicate, produces output but flags for human review 
+
+### Example 3: Reusable water bottle (edge case)
+
+
+| component | material | quantity | spend_usd | weight_kg | supplier | country_of_origin |
+| --------- | -------- | -------- | ---- | --------- | -------- | ----------------- |
+| body | stainless steel | 1 | 10 | 0.3 | ABCD | India |
+| Lid | SS304 | 1 | 3 | 0.07 | abc | India |
+| Gasket/Seal | Silicone | 1 | 1 | 0.0008 | cvb | India |
+| Insulation | aerogel | 1 | 2 | 0.0001 | dfgh | India |
+| Antimicrobial treatment | tritan copolyester | 1 | 2 | 0.0001 | bnm | India |
+| packaging | cardboard | 1 | 1 | 0.050 | ert | china |
+| packaging | coating | 1 | 1 | 0.005 | ert | china |
+
+Expected behavior: 
+- Rows 1 and 2: tool recognizes "stainless steel" 
+  and "SS304" as potential duplicates, flags for review
+- Row 4: "aerogel" has no match in factor database, 
+  flags for human input
+- Row 5: "Tritan copolyester" has no match, 
+  flags for human input  
+- Row 7: "coating" is ambiguous, suggest nearest 
+  matches (powder coat, paint, anodizing), flag
+
+## Failure Modes
+
+| Failure | Trigger | Tool behavior |
+|---------|---------|---------------|
+| Unreadable file | corrupted CSV, wrong format | Show an error "unreadable file" and ask user to upload a valid file |
+| Empty BOM | file uploads but has no data rows | Show an error "empty file" and ask user to upload a non empty file |
+| No matched factors | none of the materials match | Don't show total footprint. show the lineitem breakdown table showing parsed BOM and flags |
+| Partial match | some rows match, some don't | show total footprint with a completeness warning, show breakdown table with matched and flagged rows clearly distinguished. |
+| All flagged | every row has issues | Don't show total footprint. show the lineitem breakdown table showing parsed BOM and flags |
+| Column missing | required column is missing | Show an error "missing column" and ask user to upload a valid file with all the columns |
+| Large file | more than 500 rows | Show an error to use that tool only supports 500 rows |
+

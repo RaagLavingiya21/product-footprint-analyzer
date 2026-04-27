@@ -1,0 +1,6 @@
+component,material,quantity,spend_usd,weight_kg,supplier,country_of_origin
+body,cotton fabric,1,10,0.15,ABCD,India
+thread,nylon,1,1,0.005,ABCD,India
+label,nylon,1,1,0.001,ABCD,India
+dye,reactive dye,1,1,0.009,ABCD,India
+Packaging,LDPE,1,1,0.008,ABCD,China
